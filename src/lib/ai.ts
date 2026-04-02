@@ -64,23 +64,27 @@ export async function sendToAI(
   messages: ChatMessage[],
   currentDefinition: AppDefinition | null
 ): Promise<AIResponse> {
-  const endpoint = 'https://api.anthropic.com/v1/messages'
-  const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY as string | undefined
+  const endpoint = import.meta.env.DEV
+    ? '/api/groq/openai/v1/chat/completions'
+    : 'https://api.groq.com/openai/v1/chat/completions'
+  const apiKey = import.meta.env.VITE_GROQ_API_KEY as string | undefined
 
   const body = {
-    model: 'claude-sonnet-4-20250514',
+    model: 'llama-3.3-70b-versatile',
     max_tokens: 2048,
-    system: buildSystemPrompt(currentDefinition),
-    messages: messages
-      .filter((m) => m.role !== 'system')
-      .map((m) => ({ role: m.role, content: m.content })),
+    messages: [
+      { role: 'system', content: buildSystemPrompt(currentDefinition) },
+      ...messages
+        .filter((m) => m.role !== 'system')
+        .map((m) => ({ role: m.role, content: m.content })),
+    ],
   }
 
   const res = await fetch(endpoint, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      ...(apiKey ? { 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' } : {}),
+      ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {}),
     },
     body: JSON.stringify(body),
   })
@@ -91,15 +95,11 @@ export async function sendToAI(
   }
 
   const data = await res.json()
-  const raw = (data.content as Array<{ type: string; text?: string }>)
-    .filter((b) => b.type === 'text')
-    .map((b) => b.text ?? '')
-    .join('')
+  const raw = (data.choices as Array<{ message: { content: string } }>)[0]?.message.content ?? ''
 
   try {
     return JSON.parse(raw) as AIResponse
   } catch {
-    // Fallback: treat the whole response as a plain message
     return { message: raw }
   }
 }
