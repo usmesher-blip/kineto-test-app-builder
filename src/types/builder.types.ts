@@ -1,46 +1,4 @@
-// ─── App Definition (the "schema" for a generated mini-app) ──────────────────
-
-export type FieldType = 'text' | 'number' | 'date' | 'checkbox' | 'select'
-
-export interface Field {
-  id: string
-  label: string
-  type: FieldType
-  placeholder?: string
-  options?: string[]      // for select fields
-  required?: boolean
-}
-
-export interface Filter {
-  id: string
-  label: string
-  field: string           // field id to filter on
-  type: 'boolean' | 'search' | 'select'
-  options?: string[]
-}
-
-export interface Action {
-  id: string
-  label: string
-  type: 'add' | 'clear-completed' | 'clear-all' | 'custom'
-  icon?: string
-}
-
-export interface AppDefinition {
-  id: string
-  name: string
-  description: string
-  theme: 'light' | 'dark'
-  fields: Field[]
-  filters: Filter[]
-  actions: Action[]
-  items: AppItem[]
-}
-
-export interface AppItem {
-  id: string
-  [fieldId: string]: unknown
-}
+import type { AppDefinitionV2 } from '@/types/appDefinition.types'
 
 // ─── Chat ────────────────────────────────────────────────────────────────────
 
@@ -60,7 +18,6 @@ export interface ChatMessage {
 export interface Snapshot {
   id: string
   timestamp: number
-  label: string           // human-readable description of what changed
-  definition: AppDefinition
+  label: string
+  definition: AppDefinitionV2
 }
-

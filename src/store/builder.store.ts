@@ -1,19 +1,31 @@
 import { atom, computed } from 'nanostores'
-import type { AppDefinition, ChatMessage, Snapshot, AppItem } from '@/types/builder.types.ts'
+import type { AppDefinitionV2 } from '@/types/appDefinition.types'
+import type { ChatMessage, Snapshot } from '@/types/builder.types.ts'
 import { nanoid } from '@/utils/nanoid'
 
 const STORAGE_HISTORY = 'kineto-history'
 const STORAGE_MESSAGES = 'kineto-messages'
 
-const EMPTY_DEFINITION: AppDefinition = {
+const EMPTY_DEFINITION: AppDefinitionV2 = {
   id: 'default',
   name: 'My App',
   description: '',
-  theme: 'light',
-  fields: [],
-  filters: [],
-  actions: [],
-  items: [],
+  model: {
+    schema: {},
+    initialState: null,
+  },
+  actions: {},
+  view: {
+    defaultPageId: 'home',
+    pages: [
+      {
+        id: 'home',
+        name: 'Home',
+        url: '/',
+        elements: [],
+      },
+    ],
+  },
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -33,7 +45,7 @@ export const $history = atom<Snapshot[]>(loadJSON(STORAGE_HISTORY, []))
 export const $messages = atom<ChatMessage[]>(loadJSON(STORAGE_MESSAGES, []))
 export const $isGenerating = atom(false)
 
-// Persist history and messages to localStorage on every change
+// Persist to localStorage on every change
 $history.subscribe((value) => localStorage.setItem(STORAGE_HISTORY, JSON.stringify(value)))
 $messages.subscribe((value) => localStorage.setItem(STORAGE_MESSAGES, JSON.stringify(value)))
 
@@ -49,7 +61,7 @@ export const $canUndo = computed($history, (history) => history.length > 1)
 // ── Actions ───────────────────────────────────────────────────────────────────
 
 export const builderActions = {
-  applyDefinition(def: AppDefinition, label: string) {
+  applyDefinition(def: AppDefinitionV2, label: string) {
     const snapshot: Snapshot = {
       id: nanoid(),
       timestamp: Date.now(),
@@ -75,18 +87,8 @@ export const builderActions = {
     $isGenerating.set(v)
   },
 
-  updateItems(items: AppItem[]) {
-    const history = $history.get()
-    if (history.length === 0) return
-    const last = history[history.length - 1]
-    $history.set([
-      ...history.slice(0, -1),
-      { ...last, definition: { ...last.definition, items } },
-    ])
-  },
-
   importDefinition(json: string) {
-    const def: AppDefinition = JSON.parse(json)
+    const def: AppDefinitionV2 = JSON.parse(json)
     builderActions.applyDefinition(def, 'Imported definition')
   },
 
