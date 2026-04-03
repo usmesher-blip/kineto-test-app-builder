@@ -1,54 +1,52 @@
-import { useState, useEffect } from 'react'
-import { builderActions } from '@/store/builder.store.ts'
-import type { AppItem, AppDefinition, Filter } from '@/types/builder.types.ts'
-import { nanoid } from '@/utils/nanoid'
+import { useState, useEffect } from 'react';
+import { builderActions } from '@/store/builder.store.ts';
+import type { AppItem, AppDefinition, Filter } from '@/types/builder.types.ts';
+import { nanoid } from '@/utils/nanoid';
 
 /** Returns item list, add/update/delete handlers, and filtered view */
 export function usePreviewApp(definition: AppDefinition | null) {
-  const [items, setItems] = useState<AppItem[]>(definition?.items ?? [])
-  const [activeFilters, setActiveFilters] = useState<Record<string, unknown>>({})
+  const [items, setItems] = useState<AppItem[]>(definition?.items ?? []);
+  const [activeFilters, setActiveFilters] = useState<Record<string, unknown>>({});
 
   // Sync items when definition changes (e.g. after undo or import)
   useEffect(() => {
-    setItems(definition?.items ?? [])
-  }, [definition?.id])
+    setItems(definition?.items ?? []);
+  }, [definition?.id]);
 
   // Persist items back to store on every change
   useEffect(() => {
-    builderActions.updateItems(items)
-  }, [items])
+    builderActions.updateItems(items);
+  }, [items]);
 
   const addItem = () => {
-    const newItem: AppItem = { id: nanoid() }
+    const newItem: AppItem = { id: nanoid() };
     definition?.fields.forEach((f) => {
-      newItem[f.id] = f.type === 'checkbox' ? false : ''
-    })
-    setItems((prev) => [...prev, newItem])
-  }
+      newItem[f.id] = f.type === 'checkbox' ? false : '';
+    });
+    setItems((prev) => [...prev, newItem]);
+  };
 
   const updateItem = (id: string, fieldId: string, value: unknown) => {
-    setItems((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, [fieldId]: value } : item))
-    )
-  }
+    setItems((prev) => prev.map((item) => (item.id === id ? { ...item, [fieldId]: value } : item)));
+  };
 
   const deleteItem = (id: string) => {
-    setItems((prev) => prev.filter((item) => item.id !== id))
-  }
+    setItems((prev) => prev.filter((item) => item.id !== id));
+  };
 
   const clearCompleted = () => {
-    const checkField = definition?.fields.find((f) => f.type === 'checkbox')
-    if (!checkField) return
-    setItems((prev) => prev.filter((item) => !item[checkField.id]))
-  }
+    const checkField = definition?.fields.find((f) => f.type === 'checkbox');
+    if (!checkField) return;
+    setItems((prev) => prev.filter((item) => !item[checkField.id]));
+  };
 
-  const clearAll = () => setItems([])
+  const clearAll = () => setItems([]);
 
   const setFilter = (filterId: string, value: unknown) => {
-    setActiveFilters((prev) => ({ ...prev, [filterId]: value }))
-  }
+    setActiveFilters((prev) => ({ ...prev, [filterId]: value }));
+  };
 
-  const filteredItems = applyFilters(items, activeFilters, definition?.filters ?? [])
+  const filteredItems = applyFilters(items, activeFilters, definition?.filters ?? []);
 
   return {
     items,
@@ -60,7 +58,7 @@ export function usePreviewApp(definition: AppDefinition | null) {
     clearCompleted,
     clearAll,
     setFilter,
-  }
+  };
 }
 
 function applyFilters(
@@ -69,21 +67,23 @@ function applyFilters(
   filters: Filter[]
 ): AppItem[] {
   return filters.reduce((acc, filter) => {
-    const value = activeFilters[filter.id]
-    if (value === undefined || value === '' || value === null) return acc
+    const value = activeFilters[filter.id];
+    if (value === undefined || value === '' || value === null) return acc;
 
     return acc.filter((item) => {
-      const fieldValue = item[filter.field]
+      const fieldValue = item[filter.field];
       switch (filter.type) {
         case 'boolean':
-          return value === 'all' ? true : fieldValue === (value === 'true')
+          return value === 'all' ? true : fieldValue === (value === 'true');
         case 'search':
-          return String(fieldValue ?? '').toLowerCase().includes(String(value).toLowerCase())
+          return String(fieldValue ?? '')
+            .toLowerCase()
+            .includes(String(value).toLowerCase());
         case 'select':
-          return value === 'all' || fieldValue === value
+          return value === 'all' || fieldValue === value;
         default:
-          return true
+          return true;
       }
-    })
-  }, items)
+    });
+  }, items);
 }
