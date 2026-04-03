@@ -1,8 +1,9 @@
-import { useAppStore } from '@/store/useAppStore'
+import { useStore } from '@nanostores/react'
+import { $currentDefinition } from '@/store/builder.store.ts'
 import { AppRenderer } from './AppRenderer'
 
 export function PreviewPanel() {
-  const definition = useAppStore((s) => s.currentDefinition())
+  const definition = useStore($currentDefinition)
 
   if (!definition || definition.fields.length === 0) {
     return (

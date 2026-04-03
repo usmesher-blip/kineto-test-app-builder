@@ -64,25 +64,3 @@ export interface Snapshot {
   definition: AppDefinition
 }
 
-// ─── Store ───────────────────────────────────────────────────────────────────
-
-export interface AppStore {
-  /** Ordered list of definition snapshots; last entry is current */
-  history: Snapshot[]
-  messages: ChatMessage[]
-  isGenerating: boolean
-
-  // Derived helpers
-  currentDefinition: () => AppDefinition | null
-  canUndo: () => boolean
-
-  // Actions
-  applyDefinition: (def: AppDefinition, label: string) => void
-  undo: () => void
-  addMessage: (msg: Omit<ChatMessage, 'id' | 'timestamp'>) => void
-  setGenerating: (v: boolean) => void
-  updateItems: (items: AppItem[]) => void
-  importDefinition: (json: string) => void
-  exportDefinition: () => string
-  reset: () => void
-}

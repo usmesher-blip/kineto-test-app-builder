@@ -1,15 +1,17 @@
 import { useState } from 'react'
 import { Download, Upload, RotateCcw, ChevronDown, ChevronRight } from 'lucide-react'
-import { useAppStore } from '@/store/useAppStore'
+import { useStore } from '@nanostores/react'
+import { $history, $canUndo, $currentDefinition, builderActions } from '@/store/builder.store.ts'
 import { IconButton } from './IconButton'
 
 export function AppDefinitionPanel() {
-  const { canUndo, undo, exportDefinition, importDefinition, history } = useAppStore()
-  const definition = useAppStore((s) => s.currentDefinition())
+  const history = useStore($history)
+  const canUndo = useStore($canUndo)
+  const definition = useStore($currentDefinition)
   const [collapsed, setCollapsed] = useState(false)
 
   const handleExport = () => {
-    const json = exportDefinition()
+    const json = builderActions.exportDefinition()
     const blob = new Blob([json], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -29,7 +31,7 @@ export function AppDefinitionPanel() {
       const reader = new FileReader()
       reader.onload = (ev) => {
         try {
-          importDefinition(ev.target?.result as string)
+          builderActions.importDefinition(ev.target?.result as string)
         } catch {
           alert('Invalid JSON file')
         }
@@ -52,7 +54,7 @@ export function AppDefinitionPanel() {
         </button>
 
         <div className="flex gap-1">
-          <IconButton title="Undo" disabled={!canUndo()} onClick={undo}>
+          <IconButton title="Undo" disabled={!canUndo} onClick={builderActions.undo}>
             <RotateCcw size={13} />
           </IconButton>
           <IconButton title="Export JSON" onClick={handleExport}>
@@ -68,7 +70,7 @@ export function AppDefinitionPanel() {
       {!collapsed && (
         <div className="px-4 py-1.5 text-xs text-gray-400 border-b border-gray-200 bg-white">
           {history.length} snapshot{history.length !== 1 ? 's' : ''} •{' '}
-          {canUndo() ? `undo available` : 'no undo'}
+          {canUndo ? `undo available` : 'no undo'}
         </div>
       )}
 

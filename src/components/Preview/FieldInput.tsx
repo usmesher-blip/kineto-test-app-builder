@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import type { Field } from '@/types'
+import type { Field } from '@/types/builder.types.ts'
 
 export interface FieldInputProps {
   field: Field

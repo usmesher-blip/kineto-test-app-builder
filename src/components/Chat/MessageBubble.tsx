@@ -1,5 +1,5 @@
 import clsx from 'clsx'
-import type { ChatMessage } from '@/types'
+import type { ChatMessage } from '@/types/builder.types.ts'
 
 export function MessageBubble({ message }: { message: ChatMessage }) {
   const isUser = message.role === 'user'

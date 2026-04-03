@@ -1,6 +1,6 @@
 import clsx from 'clsx'
 import { Trash2 } from 'lucide-react'
-import type { Field, AppItem } from '@/types'
+import type { Field, AppItem } from '@/types/builder.types.ts'
 import { FieldInput } from './FieldInput'
 
 export interface ItemRowProps {

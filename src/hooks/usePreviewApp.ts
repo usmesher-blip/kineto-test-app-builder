@@ -1,12 +1,10 @@
 import { useState, useEffect } from 'react'
-import { useAppStore } from '@/store/useAppStore'
-import type { AppItem, AppDefinition, Filter } from '@/types'
+import { builderActions } from '@/store/builder.store.ts'
+import type { AppItem, AppDefinition, Filter } from '@/types/builder.types.ts'
 import { nanoid } from '@/utils/nanoid'
 
 /** Returns item list, add/update/delete handlers, and filtered view */
 export function usePreviewApp(definition: AppDefinition | null) {
-  const { updateItems } = useAppStore()
-
   const [items, setItems] = useState<AppItem[]>(definition?.items ?? [])
   const [activeFilters, setActiveFilters] = useState<Record<string, unknown>>({})
 
@@ -17,7 +15,7 @@ export function usePreviewApp(definition: AppDefinition | null) {
 
   // Persist items back to store on every change
   useEffect(() => {
-    updateItems(items)
+    builderActions.updateItems(items)
   }, [items])
 
   const addItem = () => {
@@ -39,7 +37,6 @@ export function usePreviewApp(definition: AppDefinition | null) {
   }
 
   const clearCompleted = () => {
-    // "completed" is typically a boolean field — find the first checkbox field
     const checkField = definition?.fields.find((f) => f.type === 'checkbox')
     if (!checkField) return
     setItems((prev) => prev.filter((item) => !item[checkField.id]))

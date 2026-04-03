@@ -1,7 +1,7 @@
 import clsx from 'clsx'
 import { Plus, Trash2, RotateCcw } from 'lucide-react'
 import { usePreviewApp } from '@/hooks/usePreviewApp'
-import type { AppDefinition } from '@/types'
+import type { AppDefinition } from '@/types/builder.types.ts'
 import { ItemRow } from './ItemRow'
 
 export function AppRenderer({ definition }: { definition: AppDefinition }) {

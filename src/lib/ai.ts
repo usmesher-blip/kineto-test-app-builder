@@ -1,4 +1,4 @@
-import type { AppDefinition, ChatMessage } from '@/types'
+import type { AppDefinition, ChatMessage } from '@/types/builder.types.ts'
 
 export interface AIResponse {
   message: string
