@@ -125,6 +125,11 @@ export type ViewElement = {
   // Conditional visibility
   visibleWhen?: string; // expression: "state.user.isLoggedIn"
 
+  // For list elements: per-item expression evaluated with `item` and `index` in scope.
+  // Items where expression is falsy are hidden — state array is never mutated.
+  // e.g. "state.ui.filter === 'all' || item.done === (state.ui.filter === 'done')"
+  filterExpr?: string;
+
   // Layout/style hints (enough for LLM to be intentional)
   layout?: 'row' | 'column' | 'grid';
   variant?: 'primary' | 'secondary' | 'success' | 'warning';

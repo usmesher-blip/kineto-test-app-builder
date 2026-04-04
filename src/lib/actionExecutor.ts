@@ -16,6 +16,15 @@ export function executeActionRef(ref: ActionRef, ctx: RuntimeContext): Record<st
     return {};
   }
 
+  // Evaluate argBindings and expose them as `args` in the action's expression context
+  if (ref.argBindings && Object.keys(ref.argBindings).length > 0) {
+    const args: Record<string, unknown> = {};
+    for (const [key, expr] of Object.entries(ref.argBindings)) {
+      args[key] = evaluateExpr(expr, ctx.state, ctx.extraContext);
+    }
+    ctx = { ...ctx, extraContext: { ...ctx.extraContext, args } };
+  }
+
   return executeAction(action, ctx);
 }
 

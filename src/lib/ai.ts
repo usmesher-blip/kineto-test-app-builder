@@ -50,6 +50,9 @@ type Action =
   | { type: "sequence"; steps: ActionRef[] }
   | { type: "conditional"; condition: string; then: ActionRef[]; else?: ActionRef[] }
 
+// argBindings: expressions evaluated at call-site and injected as 'args' in the action's valueExpr
+// e.g. { "actionId": "setFilter", "argBindings": { "field": "'done'", "value": "true" } }
+// inside the action: valueExpr can reference args.field, args.value
 type ActionRef = { actionId: string; argBindings?: Record<string,string> }
 
 interface Page {
@@ -72,6 +75,8 @@ interface ViewElement {
     onMount?: ActionRef[]
   }
   visibleWhen?: string   // JS expression for conditional visibility
+  filterExpr?: string    // list only: per-item boolean expression — items where false are hidden, state array untouched
+                         // 'item' and 'index' in scope, e.g. "state.ui.filter === 'all' || item.done"
   layout?: "row" | "column" | "grid"
   variant?: "primary" | "secondary" | "success" | "warning"
   label?: string
@@ -89,10 +94,26 @@ interface ViewElement {
 - For \`stateUpdate\` operations:
   - \`set\`: replace value with \`valueExpr\` result
   - \`push\`: append \`valueExpr\` result to array
-  - \`remove\`: remove array items where \`valueExpr\` function returns true, or at numeric index
-  - \`filter\`: keep array items where \`valueExpr\` function returns true
+  - \`remove\`: permanently delete items by value/index (destructive — use only for intentional deletes)
   - \`patch\`: merge object from \`valueExpr\` into current value
   - \`sort\`: sort array; \`valueExpr\` can be a compare function
+
+## Filtering lists (display-only, non-destructive)
+
+**Never use stateUpdate filter to show/hide items** — it permanently removes them from state.
+
+Instead: store the active filter value in state and put filterExpr on the list element. The renderer evaluates it per item; non-matching items are hidden, the array is untouched.
+
+Use a single generic "setFilter" action parameterized via argBindings — one action covers any list, any field:
+
+  Action: { "type": "stateUpdate", "target": "state.ui.filter", "operation": "set", "valueExpr": "args.value" }
+
+  Button: { "actionId": "setFilter", "argBindings": { "value": "'active'" } }
+  Button: { "actionId": "setFilter", "argBindings": { "value": "'done'" } }
+  Button: { "actionId": "setFilter", "argBindings": { "value": "'all'" } }
+
+  List:   filterExpr referencing state.ui.filter and item fields, e.g.:
+          "state.ui.filter === 'all' || item.status === state.ui.filter"
 
 ## Element types
 
@@ -105,7 +126,7 @@ interface ViewElement {
 | dropdown | select | source (selected value), target, children as options |
 | button | action trigger | label, variant, events.onClick |
 | panel | layout container | layout (row/column/grid), children |
-| list | render array items | source (array), children (item template) |
+| list | render array items | source (array), filterExpr (hide items without mutating state), children (item template) |
 | form | submit wrapper | events.onSubmit, children |
 | table | display array as table | source (array of objects) |
 | image | display image | source (URL expression) |
@@ -123,7 +144,7 @@ interface ViewElement {
     "schema": {
       "todos": { "type": "array", "items": { "type": "object", "properties": { "id": {"type":"string","value":""}, "text": {"type":"string","value":""}, "done": {"type":"boolean","value":false} } } },
       "newText": { "type": "string", "value": "" },
-      "filter": { "type": "string", "value": "all" }
+      "ui": { "type": "object", "properties": { "filter": { "type": "string", "value": "all" } } }
     },
     "initialState": null
   },
@@ -132,8 +153,8 @@ interface ViewElement {
     "clearInput": { "type": "stateUpdate", "target": "state.newText", "operation": "set", "valueExpr": "''" },
     "addAndClear": { "type": "sequence", "steps": [{"actionId":"addTodo"}, {"actionId":"clearInput"}] },
     "toggleTodo": { "type": "stateUpdate", "target": "state.todos", "operation": "set", "valueExpr": "state.todos.map(t => t.id === item.id ? {...t, done: !t.done} : t)" },
-    "removeTodo": { "type": "stateUpdate", "target": "state.todos", "operation": "remove", "valueExpr": "(t) => t.id === item.id" },
-    "clearDone": { "type": "stateUpdate", "target": "state.todos", "operation": "filter", "valueExpr": "(t) => !t.done" }
+    "removeTodo": { "type": "stateUpdate", "target": "state.todos", "operation": "set", "valueExpr": "state.todos.filter(t => t.id !== item.id)" },
+    "setFilter": { "type": "stateUpdate", "target": "state.ui.filter", "operation": "set", "valueExpr": "args.value" }
   },
   "view": {
     "defaultPageId": "home",
@@ -146,14 +167,20 @@ interface ViewElement {
           { "id": "new-input", "type": "input", "source": "state.newText", "target": "state.newText", "placeholder": "New todo…" },
           { "id": "add-btn", "type": "button", "label": "Add", "variant": "primary", "events": { "onClick": [{"actionId":"addAndClear"}] } }
         ]},
-        { "id": "todo-list", "type": "list", "source": "state.todos", "children": [
+        { "id": "filter-row", "type": "panel", "layout": "row", "children": [
+          { "id": "f-all",    "type": "button", "label": "All",    "variant": "secondary", "events": { "onClick": [{"actionId":"setFilter","argBindings":{"value":"'all'"}}] } },
+          { "id": "f-active", "type": "button", "label": "Active", "variant": "secondary", "events": { "onClick": [{"actionId":"setFilter","argBindings":{"value":"'active'"}}] } },
+          { "id": "f-done",   "type": "button", "label": "Done",   "variant": "secondary", "events": { "onClick": [{"actionId":"setFilter","argBindings":{"value":"'done'"}}] } }
+        ]},
+        { "id": "todo-list", "type": "list", "source": "state.todos",
+          "filterExpr": "state.ui.filter === 'all' || (state.ui.filter === 'active' && !item.done) || (state.ui.filter === 'done' && item.done)",
+          "children": [
           { "id": "todo-row", "type": "panel", "layout": "row", "children": [
             { "id": "done-check", "type": "checkbox", "source": "item.done", "events": { "onClick": [{"actionId":"toggleTodo"}] } },
             { "id": "todo-text", "type": "text", "source": "item.text" },
             { "id": "del-btn", "type": "button", "label": "✕", "variant": "secondary", "events": { "onClick": [{"actionId":"removeTodo"}] } }
           ]}
-        ]},
-        { "id": "clear-btn", "type": "button", "label": "Clear done", "variant": "secondary", "visibleWhen": "state.todos.some(t => t.done)", "events": { "onClick": [{"actionId":"clearDone"}] } }
+        ]}
       ]
     }]
   }

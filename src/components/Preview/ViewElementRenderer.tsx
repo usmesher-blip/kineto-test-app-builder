@@ -175,7 +175,12 @@ export function ViewElementRenderer({
 
     // ── List ───────────────────────────────────────────────────────────────────
     case 'list': {
-      const items = Array.isArray(sourceValue) ? (sourceValue as unknown[]) : [];
+      const allItems = Array.isArray(sourceValue) ? (sourceValue as unknown[]) : [];
+      const items = element.filterExpr
+        ? allItems.filter((item, index) =>
+            Boolean(evaluateExpr(element.filterExpr!, state, { ...extraContext, item, index }))
+          )
+        : allItems;
       if (items.length === 0) {
         return (
           <p
