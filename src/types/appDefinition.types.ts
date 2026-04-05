@@ -135,6 +135,7 @@ export type ViewElement = {
   variant?: 'primary' | 'secondary' | 'success' | 'warning';
   label?: string;
   placeholder?: string;
+  styles?: string[]; // extra Tailwind classes applied to the root element
 
   children?: ViewElement[];
 };

@@ -38,6 +38,8 @@ export function ViewElementRenderer({
     fire(element.events?.onClick);
   };
 
+  const s = element.styles; // extra Tailwind classes; clsx accepts string[] natively
+
   const layoutClass = clsx(
     element.layout === 'row' && 'flex flex-row gap-2 items-center',
     element.layout === 'column' && 'flex flex-col gap-2',
@@ -72,7 +74,7 @@ export function ViewElementRenderer({
       const raw = sourceValue != null ? String(sourceValue) : (element.label ?? '');
       const text = expandTemplate(raw, state, extraContext);
       return (
-        <span className={clsx('text-sm', isDark ? 'text-gray-200' : 'text-gray-800')}>{text}</span>
+        <span className={clsx('text-sm', isDark ? 'text-gray-200' : 'text-gray-800', s)}>{text}</span>
       );
     }
 
@@ -81,7 +83,7 @@ export function ViewElementRenderer({
       return (
         <input
           type="text"
-          className={clsx(inputBase, 'flex-1')}
+          className={clsx(inputBase, 'flex-1', s)}
           value={sourceValue != null ? String(sourceValue) : ''}
           placeholder={element.placeholder}
           onChange={(e) => handleChange(e.target.value)}
@@ -91,7 +93,7 @@ export function ViewElementRenderer({
     // ── Checkbox ───────────────────────────────────────────────────────────────
     case 'checkbox':
       return (
-        <label className="flex items-center gap-2 cursor-pointer select-none">
+        <label className={clsx('flex items-center gap-2 cursor-pointer select-none', s)}>
           <input
             type="checkbox"
             checked={Boolean(sourceValue)}
@@ -111,7 +113,7 @@ export function ViewElementRenderer({
       return (
         <input
           type="date"
-          className={inputBase}
+          className={clsx(inputBase, s)}
           value={sourceValue != null ? String(sourceValue) : ''}
           onChange={(e) => handleChange(e.target.value)}
         />
@@ -119,12 +121,11 @@ export function ViewElementRenderer({
 
     // ── Dropdown ───────────────────────────────────────────────────────────────
     case 'dropdown': {
-      // source is the selected value; children (if any) are options with label+source
       const selected = sourceValue != null ? String(sourceValue) : '';
       const hasChildOptions = element.children && element.children.length > 0;
       return (
         <select
-          className={inputBase}
+          className={clsx(inputBase, s)}
           value={selected}
           onChange={(e) => handleChange(e.target.value)}
         >
@@ -158,7 +159,8 @@ export function ViewElementRenderer({
         (!element.variant || element.variant === 'secondary') &&
           (isDark
             ? 'bg-gray-700 text-gray-200 hover:bg-gray-600 focus:ring-gray-500'
-            : 'bg-gray-100 text-gray-700 hover:bg-gray-200 focus:ring-gray-400')
+            : 'bg-gray-100 text-gray-700 hover:bg-gray-200 focus:ring-gray-400'),
+        s
       );
       return (
         <button className={variantClass} onClick={() => fire(element.events?.onClick)}>
@@ -170,7 +172,9 @@ export function ViewElementRenderer({
     // ── Panel ──────────────────────────────────────────────────────────────────
     case 'panel':
       return (
-        <div className={clsx(layoutClass || 'flex flex-col gap-2', 'p-2')}>{renderChildren()}</div>
+        <div className={clsx(layoutClass || 'flex flex-col gap-2', 'p-2', s)}>
+          {renderChildren()}
+        </div>
       );
 
     // ── List ───────────────────────────────────────────────────────────────────
@@ -183,15 +187,13 @@ export function ViewElementRenderer({
         : allItems;
       if (items.length === 0) {
         return (
-          <p
-            className={clsx('text-sm text-center py-4', isDark ? 'text-gray-500' : 'text-gray-400')}
-          >
+          <p className={clsx('text-sm text-center py-4', isDark ? 'text-gray-500' : 'text-gray-400', s)}>
             No items.
           </p>
         );
       }
       return (
-        <div className={clsx(layoutClass || 'flex flex-col gap-2')}>
+        <div className={clsx(layoutClass || 'flex flex-col gap-2', s)}>
           {items.map((listItem, idx) => (
             <div key={idx} className="flex flex-col gap-1">
               {element.children?.map((child) => (
@@ -217,7 +219,7 @@ export function ViewElementRenderer({
     case 'form':
       return (
         <form
-          className={clsx(layoutClass || 'flex flex-col gap-3')}
+          className={clsx(layoutClass || 'flex flex-col gap-3', s)}
           onSubmit={(e) => {
             e.preventDefault();
             fire(element.events?.onSubmit);
@@ -233,12 +235,10 @@ export function ViewElementRenderer({
       const columns = rows.length > 0 ? Object.keys(rows[0]).filter((k) => k !== 'id') : [];
 
       return (
-        <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
+        <div className={clsx('overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700', s)}>
           <table className="w-full text-sm">
             <thead>
-              <tr
-                className={clsx(isDark ? 'bg-gray-800 text-gray-300' : 'bg-gray-50 text-gray-600')}
-              >
+              <tr className={clsx(isDark ? 'bg-gray-800 text-gray-300' : 'bg-gray-50 text-gray-600')}>
                 {columns.map((col) => (
                   <th key={col} className="px-4 py-2 text-left font-medium capitalize">
                     {col}
@@ -252,9 +252,7 @@ export function ViewElementRenderer({
                   key={ri}
                   className={clsx(
                     'border-t',
-                    isDark
-                      ? 'border-gray-700 hover:bg-gray-800'
-                      : 'border-gray-100 hover:bg-gray-50'
+                    isDark ? 'border-gray-700 hover:bg-gray-800' : 'border-gray-100 hover:bg-gray-50'
                   )}
                 >
                   {columns.map((col) => (
@@ -290,12 +288,13 @@ export function ViewElementRenderer({
     case 'image': {
       const src = sourceValue ? String(sourceValue) : '';
       return src ? (
-        <img src={src} alt={element.label ?? ''} className="max-w-full rounded-lg object-cover" />
+        <img src={src} alt={element.label ?? ''} className={clsx('max-w-full rounded-lg object-cover', s)} />
       ) : (
         <div
           className={clsx(
             'w-full h-32 rounded-lg flex items-center justify-center text-sm',
-            isDark ? 'bg-gray-800 text-gray-500' : 'bg-gray-100 text-gray-400'
+            isDark ? 'bg-gray-800 text-gray-500' : 'bg-gray-100 text-gray-400',
+            s
           )}
         >
           Image

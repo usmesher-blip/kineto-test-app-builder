@@ -1,9 +1,9 @@
-import type { AppDefinitionV2 } from '@/types/appDefinition.types'
-import type { ChatMessage } from '@/types/builder.types.ts'
+import type { AppDefinitionV2 } from '@/types/appDefinition.types';
+import type { ChatMessage } from '@/types/builder.types.ts';
 
 export interface AIResponse {
-  message: string
-  definition?: AppDefinitionV2
+  message: string;
+  definition?: AppDefinitionV2;
 }
 
 function buildSystemPrompt(current: AppDefinitionV2 | null): string {
@@ -81,6 +81,7 @@ interface ViewElement {
   variant?: "primary" | "secondary" | "success" | "warning"
   label?: string
   placeholder?: string
+  styles?: string[]      // extra Tailwind classes applied to the element's root node, use them then user wants to add any styles to the <elements></elements>
   children?: ViewElement[]
 }
 \`\`\`
@@ -187,6 +188,56 @@ Use a single generic "setFilter" action parameterized via argBindings — one ac
 }
 \`\`\`
 
+## Styleguide
+
+Use the \`styles\` array on any element to apply Tailwind classes. Always produce polished, visually consistent UIs — never leave apps unstyled.
+
+### Typography
+| intent | classes |
+|--------|---------|
+| page title | \`"text-2xl font-bold text-gray-900"\` |
+| section heading | \`"text-lg font-semibold text-gray-800"\` |
+| body / label | \`"text-sm text-gray-700"\` |
+| muted / hint | \`"text-xs text-gray-400"\` |
+| success text | \`"text-sm font-medium text-green-600"\` |
+| danger text | \`"text-sm font-medium text-red-600"\` |
+
+### Cards & containers
+| intent | classes |
+|--------|---------|
+| card | \`"bg-white rounded-xl border border-gray-200 shadow-sm p-4"\` |
+| section divider | \`"border-t border-gray-100 pt-4 mt-4"\` |
+| sidebar | \`"bg-gray-50 border-r border-gray-200 p-4 min-w-48"\` |
+| full-bleed hero | \`"bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-8 rounded-xl"\` |
+
+### Spacing helpers
+- Tight row of controls: panel with \`layout: "row"\` + \`styles: ["gap-2", "items-center"]\`
+- Stacked form fields: panel with \`layout: "column"\` + \`styles: ["gap-3"]\`
+- Centered content: \`"flex items-center justify-center"\`
+- Full width element: \`"w-full"\`
+
+### Status & badges
+| intent | classes |
+|--------|---------|
+| success badge | \`"inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700"\` |
+| warning badge | \`"inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700"\` |
+| neutral badge | \`"inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600"\` |
+| danger badge | \`"inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-600"\` |
+
+### Common patterns
+- **Stat card**: panel card with a large number (\`text-3xl font-bold\`) above a muted label
+- **List item row**: panel row with \`"items-center justify-between p-3 rounded-lg hover:bg-gray-50 transition-colors"\`
+- **Empty state**: text with \`"text-center py-12 text-gray-400"\`
+- **Danger button**: button variant secondary + \`styles: ["text-red-600 hover:bg-red-50"]\`
+- **Active filter pill**: use \`visibleWhen\` to show one of two buttons (active vs inactive style) based on filter state
+
+### Rules for styles
+- Always style panels that act as cards.
+- Give lists breathing room with gap and padding on each row.
+- Use color purposefully — blue for primary actions, red for destructive, green for success.
+- Prefer rounded corners (\`rounded-lg\` or \`rounded-xl\`) on all containers and inputs.
+- Don't add \`styles\` when the default variant styling already looks correct.
+
 ## Rules
 - Return only valid JSON. Never wrap in markdown fences.
 - Keep existing definition id when updating; generate a new unique id for brand-new apps.
@@ -195,7 +246,7 @@ Use a single generic "setFilter" action parameterized via argBindings — one ac
 - Be concise in "message" — one or two sentences.
 
 ## Current definition
-${current ? JSON.stringify(current, null, 2) : 'None yet — create one from scratch.'}`
+${current ? JSON.stringify(current, null, 2) : 'None yet — create one from scratch.'}`;
 }
 
 export async function sendToAI(
@@ -204,8 +255,8 @@ export async function sendToAI(
 ): Promise<AIResponse> {
   const endpoint = import.meta.env.DEV
     ? '/api/groq/openai/v1/chat/completions'
-    : 'https://api.groq.com/openai/v1/chat/completions'
-  const apiKey = import.meta.env.VITE_GROQ_API_KEY as string | undefined
+    : 'https://api.groq.com/openai/v1/chat/completions';
+  const apiKey = import.meta.env.VITE_GROQ_API_KEY as string | undefined;
 
   const body = {
     model: 'llama-3.3-70b-versatile',
@@ -216,7 +267,7 @@ export async function sendToAI(
         .filter((m) => m.role !== 'system')
         .map((m) => ({ role: m.role, content: m.content })),
     ],
-  }
+  };
 
   const res = await fetch(endpoint, {
     method: 'POST',
@@ -225,29 +276,28 @@ export async function sendToAI(
       ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {}),
     },
     body: JSON.stringify(body),
-  })
+  });
 
   if (!res.ok) {
-    const err = await res.text()
-    throw new Error(`AI request failed (${res.status}): ${err}`)
+    const err = await res.text();
+    throw new Error(`AI request failed (${res.status}): ${err}`);
   }
 
-  const data = await res.json()
-  const raw =
-    (data.choices as Array<{ message: { content: string } }>)[0]?.message.content ?? ''
+  const data = await res.json();
+  const raw = (data.choices as Array<{ message: { content: string } }>)[0]?.message.content ?? '';
 
   try {
-    return JSON.parse(raw) as AIResponse
+    return JSON.parse(raw) as AIResponse;
   } catch {
     // Try to extract JSON from the response if the model added extra text
-    const match = raw.match(/\{[\s\S]*\}/)
+    const match = raw.match(/\{[\s\S]*\}/);
     if (match) {
       try {
-        return JSON.parse(match[0]) as AIResponse
+        return JSON.parse(match[0]) as AIResponse;
       } catch {
         // fall through
       }
     }
-    return { message: raw }
+    return { message: raw };
   }
 }
