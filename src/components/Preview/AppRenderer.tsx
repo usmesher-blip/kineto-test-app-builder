@@ -4,7 +4,7 @@ import { ViewElementRenderer } from './ViewElementRenderer';
 import type { AppDefinitionV2 } from '@/types/appDefinition.types';
 
 export function AppRenderer({ definition }: { definition: AppDefinitionV2 }) {
-  const { state, currentPage, executeAction, setAt, navigate } = useAppRuntime(definition);
+  const { state, currentPage, fire, setAt, navigate } = useAppRuntime(definition);
 
   console.log('STATE: ', state);
 
@@ -41,7 +41,7 @@ export function AppRenderer({ definition }: { definition: AppDefinitionV2 }) {
             element={element}
             state={state}
             extraContext={{}}
-            onAction={(refs, extraCtx) => executeAction(refs, extraCtx)}
+            onAction={(refs, extraCtx) => fire(refs, extraCtx)}
             onSet={setAt}
             isDark={false}
           />

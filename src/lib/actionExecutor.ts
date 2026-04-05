@@ -1,119 +1,105 @@
 import type { AppDefinitionV2, Action, ActionRef } from '@/types/appDefinition.types';
 import { evaluateExpr, expandTemplate, applyStateOperation } from './expressionEvaluator';
 
+/** Mutable state container — lets sequential actions always see the latest state. */
+export type StateContainer = { current: Record<string, unknown> };
+
 export type RuntimeContext = {
   definition: AppDefinitionV2;
-  state: Record<string, unknown>;
+  state: StateContainer;
   setState: (s: Record<string, unknown>) => void;
   navigate: (pageId: string, params?: Record<string, string>) => void;
   extraContext: Record<string, unknown>;
 };
 
-export function executeActionRef(ref: ActionRef, ctx: RuntimeContext): Record<string, unknown> {
-  const action = ctx.definition.actions[ref.actionId];
-  if (!action) {
-    console.warn(`[ActionExecutor] Unknown action: "${ref.actionId}"`);
-    return {};
-  }
-
-  // Evaluate argBindings and expose them as `args` in the action's expression context
-  if (ref.argBindings && Object.keys(ref.argBindings).length > 0) {
-    const args: Record<string, unknown> = {};
-    for (const [key, expr] of Object.entries(ref.argBindings)) {
-      args[key] = evaluateExpr(expr, ctx.state, ctx.extraContext);
+/** Single emitter — resolve ActionRefs and dispatch each one. */
+export function dispatch(refs: ActionRef[], ctx: RuntimeContext): void {
+  for (const ref of refs) {
+    const action = ctx.definition.actions[ref.actionId];
+    if (!action) {
+      console.warn(`[runtime] Unknown action: "${ref.actionId}"`);
+      continue;
     }
-    ctx = { ...ctx, extraContext: { ...ctx.extraContext, args } };
+    handle(action, withArgs(ref, ctx));
   }
-
-  return executeAction(action, ctx);
 }
 
-export function executeAction(action: Action, ctx: RuntimeContext): Record<string, unknown> {
+function withArgs(ref: ActionRef, ctx: RuntimeContext): RuntimeContext {
+  if (!ref.argBindings || Object.keys(ref.argBindings).length === 0) return ctx;
+  const args: Record<string, unknown> = {};
+  for (const [key, expr] of Object.entries(ref.argBindings)) {
+    args[key] = evaluateExpr(expr, ctx.state.current, ctx.extraContext);
+  }
+  return { ...ctx, extraContext: { ...ctx.extraContext, args } };
+}
+
+/** Single handler — the action "reducer". */
+function handle(action: Action, ctx: RuntimeContext): void {
   switch (action.type) {
     case 'stateUpdate': {
-      if (action.condition) {
-        const cond = evaluateExpr(action.condition, ctx.state, ctx.extraContext);
-        if (!cond) return ctx.state;
-      }
-
-      const value = evaluateExpr(action.valueExpr, ctx.state, ctx.extraContext);
-      const newState = applyStateOperation(ctx.state, action.target, action.operation, value);
-      ctx.setState(newState);
-      return newState;
+      if (action.condition && !evaluateExpr(action.condition, ctx.state.current, ctx.extraContext)) return;
+      const value = evaluateExpr(action.valueExpr, ctx.state.current, ctx.extraContext);
+      const next = applyStateOperation(ctx.state.current, action.target, action.operation, value);
+      ctx.state.current = next;
+      ctx.setState(next);
+      return;
     }
 
     case 'navigate': {
       ctx.navigate(action.pageId, action.params);
-      return ctx.state;
+      return;
     }
 
     case 'sequence': {
-      for (const ref of action.steps) {
-        ctx.state = executeActionRef(ref, ctx);
-      }
-      return ctx.state;
+      dispatch(action.steps, ctx);
+      return;
     }
 
     case 'conditional': {
-      const cond = evaluateExpr(action.condition, ctx.state, ctx.extraContext);
-      const branch = cond ? action.then : (action.else ?? []);
-      for (const ref of branch) {
-        executeActionRef(ref, ctx);
-      }
-      return ctx.state;
+      const branch = evaluateExpr(action.condition, ctx.state.current, ctx.extraContext)
+        ? action.then
+        : (action.else ?? []);
+      dispatch(branch, ctx);
+      return;
     }
 
     case 'apiCall': {
-      const url = expandTemplate(action.url, ctx.state, ctx.extraContext);
-      const queryString = action.queryParams
+      const url = expandTemplate(action.url, ctx.state.current, ctx.extraContext);
+      const qs = action.queryParams
         ? '?' +
           Object.entries(action.queryParams)
             .map(
               ([k, v]) =>
-                `${encodeURIComponent(k)}=${encodeURIComponent(
-                  expandTemplate(v, ctx.state, ctx.extraContext)
-                )}`
+                `${encodeURIComponent(k)}=${encodeURIComponent(expandTemplate(v, ctx.state.current, ctx.extraContext))}`
             )
             .join('&')
         : '';
-
-      const bodyData = action.bodyExpr
-        ? evaluateExpr(action.bodyExpr, ctx.state, ctx.extraContext)
+      const body = action.bodyExpr
+        ? evaluateExpr(action.bodyExpr, ctx.state.current, ctx.extraContext)
         : undefined;
+      const headers = { 'Content-Type': 'application/json', ...(action.headers ?? {}) };
 
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-        ...(action.headers ?? {}),
-      };
-
-      // Capture state snapshot for callbacks
-      const capturedState = ctx.state;
-
-      fetch(url + queryString, {
+      fetch(url + qs, {
         method: action.method,
         headers,
-        body: bodyData != null ? JSON.stringify(bodyData) : undefined,
+        body: body != null ? JSON.stringify(body) : undefined,
       })
         .then((res) => {
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
           return res.json();
         })
         .then((data: unknown) => {
-          let newState = capturedState;
           if (action.resultTarget) {
-            newState = applyStateOperation(newState, action.resultTarget, 'set', data);
-            ctx.setState(newState);
+            const next = applyStateOperation(ctx.state.current, action.resultTarget, 'set', data);
+            ctx.state.current = next;
+            ctx.setState(next);
           }
-          for (const ref of action.onSuccess) {
-            executeActionRef(ref, { ...ctx, state: newState });
-          }
+          dispatch(action.onSuccess, ctx);
         })
         .catch(() => {
-          for (const ref of action.onError) {
-            executeActionRef(ref, { ...ctx, state: capturedState });
-          }
+          dispatch(action.onError, ctx);
         });
-      return ctx.state;
+      return;
     }
   }
 }

@@ -1,64 +1,47 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import type { AppDefinitionV2, ActionRef, Page } from '@/types/appDefinition.types';
 import { initRuntimeState, applyStateOperation } from '@/lib/expressionEvaluator';
-import { executeActionRef } from '@/lib/actionExecutor';
-import type { RuntimeContext } from '@/lib/actionExecutor';
+import { dispatch, type StateContainer } from '@/lib/actionExecutor';
 
 export function useAppRuntime(definition: AppDefinitionV2 | null) {
   const [state, setState] = useState<Record<string, unknown>>({});
   const [currentPageId, setCurrentPageId] = useState<string>('');
 
-  // Mutable ref so sequential actions always see the latest state
-  const stateRef = useRef(state);
-  stateRef.current = state;
+  // Shared mutable container — the executor writes here so sequential actions see latest state
+  const stateContainer = useRef<StateContainer>({ current: state });
 
-  // Re-initialize when definition changes
   useEffect(() => {
     if (!definition) return;
     const initial = initRuntimeState(definition.model);
-    stateRef.current = initial;
+    stateContainer.current.current = initial;
     setState(initial);
     setCurrentPageId(definition.view.defaultPageId);
   }, [definition?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const navigate = useCallback((pageId: string) => {
-    setCurrentPageId(pageId);
-  }, []);
+  const navigate = useCallback((pageId: string) => setCurrentPageId(pageId), []);
 
-  /**
-   * Execute a list of ActionRefs sequentially, threading updated state
-   * through each step so subsequent actions see changes from earlier ones.
-   */
-  const executeAction = useCallback(
+  const fire = useCallback(
     (refs: ActionRef[], extraContext: Record<string, unknown> = {}) => {
       if (!definition) return;
-
-      const threadedSetState = (s: Record<string, unknown>) => {
-        stateRef.current = s;
-        setState(s);
-      };
-
-      for (const ref of refs) {
-        const ctx: RuntimeContext = {
-          definition,
-          state: stateRef.current,
-          setState: threadedSetState,
-          navigate,
-          extraContext,
-        };
-        executeActionRef(ref, ctx);
-      }
+      dispatch(refs, {
+        definition,
+        state: stateContainer.current,
+        setState: (s) => {
+          stateContainer.current.current = s;
+          setState(s);
+        },
+        navigate,
+        extraContext,
+      });
     },
     [definition, navigate]
   );
 
-  /** Direct write to a state path, useful for controlled inputs. */
+  /** Direct write to a state path, used by controlled inputs. */
   const setAt = useCallback((target: string, value: unknown) => {
-    setState((prev) => {
-      const next = applyStateOperation(prev, target, 'set', value);
-      stateRef.current = next;
-      return next;
-    });
+    const next = applyStateOperation(stateContainer.current.current, target, 'set', value);
+    stateContainer.current.current = next;
+    setState(next);
   }, []);
 
   const currentPage: Page | null =
@@ -67,8 +50,8 @@ export function useAppRuntime(definition: AppDefinitionV2 | null) {
   // Fire onMount actions when page changes
   useEffect(() => {
     if (!currentPage?.onMount || !definition) return;
-    executeAction(currentPage.onMount);
+    fire(currentPage.onMount);
   }, [currentPageId, definition?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  return { state, currentPage, executeAction, setAt, navigate };
+  return { state, currentPage, fire, setAt, navigate };
 }
