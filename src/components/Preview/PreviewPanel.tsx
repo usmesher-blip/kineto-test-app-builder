@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useStore } from '@nanostores/react'
 import clsx from 'clsx'
-import { $currentDefinition, $history, $canUndo, builderActions } from '@/store/builder.store.ts'
+import { $currentDefinition, $history, $currentIndex, $canUndo, builderActions } from '@/store/builder.store.ts'
 import { AppRenderer } from './AppRenderer'
 import { AppDefinitionPanel } from '@/components/AppDefinition/AppDefinitionPanel'
 import { ChevronRight, Layers } from 'lucide-react'
@@ -25,7 +25,8 @@ export function PreviewPanel() {
     !definition ||
     definition.view.pages.every((p) => p.elements.length === 0)
 
-  const currentSnapshotId = history.at(-1)?.id
+  const currentIdx = useStore($currentIndex)
+  const currentSnapshotId = history[currentIdx]?.id
   const snapshotCount = history.length
 
   return (
