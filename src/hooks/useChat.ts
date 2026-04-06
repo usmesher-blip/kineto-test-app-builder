@@ -1,5 +1,5 @@
 import { useStore } from '@nanostores/react'
-import { $messages, $isGenerating, $currentDefinition, builderActions } from '@/store/builder.store.ts'
+import { $messages, $isGenerating, $currentDefinition, $history, builderActions } from '@/store/builder.store.ts'
 import { sendToAI } from '@/lib/ai'
 
 export function useChat() {
@@ -18,11 +18,14 @@ export function useChat() {
         $currentDefinition.get()
       )
 
+      let snapshotId: string | undefined
       if (response.definition) {
         builderActions.applyDefinition(response.definition, text)
+        const h = $history.get()
+        snapshotId = h[h.length - 1]?.id
       }
 
-      builderActions.addMessage({ role: 'assistant', content: response.message })
+      builderActions.addMessage({ role: 'assistant', content: response.message, snapshotId })
     } catch (err) {
       builderActions.addMessage({
         role: 'assistant',

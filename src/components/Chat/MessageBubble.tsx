@@ -10,7 +10,9 @@ export function MessageBubble({ message }: { message: ChatMessage }) {
           'max-w-[80%] rounded-2xl px-4 py-2 text-sm',
           isUser
             ? 'bg-blue-600 text-white rounded-br-sm'
-            : 'bg-gray-100 text-gray-800 rounded-bl-sm'
+            : message.snapshotId
+              ? 'bg-gray-100 text-gray-800 rounded-bl-sm'
+              : 'bg-amber-50 text-amber-900 rounded-bl-sm'
         )}
       >
         {message.content}
