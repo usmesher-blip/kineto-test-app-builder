@@ -152,6 +152,7 @@ The LLM receives the current definition as context and returns a full updated de
 - **Better prompt and configurability** - with some requests it could go not very well so such refinement could help to get more reasonable output a lot
 - **Better UX in terms of LLM errors handling**
 - **Multi pages app generation** - more time needed to make it full functioning
+- **Dark mode** - more time needed to make it full functioning
 
 ---
 
