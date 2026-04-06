@@ -133,9 +133,15 @@ The LLM receives the current definition as context and returns a full updated de
 | **Structured JSON response** | The system prompt instructs the model to always return `{ message, definition? }` with no markdown fences. Malformed responses fall back to text-only. |
 | **filterExpr is display-only** | List filtering never mutates state — `filterExpr` hides items in the renderer. The `remove` operation is reserved for intentional destructive deletes. |
 
+### Key tradeoffs
+
+| Tradeoff                                            | decision                                                                                                                                                                       |
+|-----------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Full html generation VS Config driven rendering** | Make LLM work only with configurations will help to reduce a risk of broken versions, also it gives more control over what is possible and what is not possible in the builder |
+
 ### What is intentionally out of scope
 
-- **No auth / key proxy** — the API key is bundled into the browser bundle. For a public deployment, proxy through a backend.
+- **No auth / key proxy** — the API key is bundled into the browser bundle. For a public deployment it should proxy through a backend.
 - **No streaming** — responses are awaited in full; a streaming UI would feel snappier.
 - **No visual snapshot timeline** — undo works but there is no UI to browse or jump to arbitrary history entries.
 - **No real code export** — the preview is a declarative renderer. Generating downloadable React/Vue code is future work.
@@ -146,6 +152,7 @@ The LLM receives the current definition as context and returns a full updated de
 - **More styling features** - configuration could be extended to include more advanced styling features
 - **Better prompt and configurability** - with some requests it could go not very well so such refinement could help to get more reasonable output a lot
 - **Better UX in terms of LLM errors handling**
+- **Multi pages app generation** - more time needed to make it full functioning
 
 ---
 
@@ -154,3 +161,6 @@ The LLM receives the current definition as context and returns a full updated de
 ```bash
 npm run build
 ```
+
+## Important Notes
+- LLM API token is blended in the build for sake of testing, but it will expire in 2 days
