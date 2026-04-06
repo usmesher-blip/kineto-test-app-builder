@@ -20,7 +20,7 @@ interface AppDefinitionV2 {
   description: string    // one-sentence description
   model: {
     schema: Record<string, ModelField>        // type definitions for all state
-    initialState: Record<string, ModelField> | null  // starting values (null = use schema defaults)
+    initialState: Record<string, unknown> | null  // plain starting values (null = all primitives start as null, arrays as [])
   }
   actions: Record<string, Action>  // action id → action definition
   view: {
@@ -31,7 +31,7 @@ interface AppDefinitionV2 {
 
 // ModelField — describes a single piece of state
 type ModelField =
-  | { type: "string" | "number" | "boolean" | "null"; value: unknown }
+  | { type: "string" | "number" | "boolean" | "null" }
   | { type: "object"; properties: Record<string, ModelField> }
   | { type: "array"; items: ModelField }   // items = element schema; runtime starts as []
   | { type: "ref"; ref: string }
@@ -137,11 +137,11 @@ Use a single generic "setFilter" action parameterized via argBindings — one ac
   "description": "A simple todo list",
   "model": {
     "schema": {
-      "todos": { "type": "array", "items": { "type": "object", "properties": { "id": {"type":"string","value":""}, "text": {"type":"string","value":""}, "done": {"type":"boolean","value":false} } } },
-      "newText": { "type": "string", "value": "" },
-      "ui": { "type": "object", "properties": { "filter": { "type": "string", "value": "all" } } }
+      "todos": { "type": "array", "items": { "type": "object", "properties": { "id": {"type":"string"}, "text": {"type":"string"}, "done": {"type":"boolean"} } } },
+      "newText": { "type": "string" },
+      "ui": { "type": "object", "properties": { "filter": { "type": "string" } } }
     },
-    "initialState": null
+    "initialState": { "todos": [], "newText": "", "ui": { "filter": "all" } }
   },
   "actions": {
     "addTodo": { "type": "stateUpdate", "target": "state.todos", "operation": "push", "valueExpr": "({id: String(Date.now()), text: state.newText.trim(), done: false})", "condition": "state.newText.trim().length > 0" },

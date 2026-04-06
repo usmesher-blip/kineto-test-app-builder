@@ -11,11 +11,11 @@ const def: AppDefinition = {
   description: '',
   model: {
     schema: {
-      count: { type: 'number', value: 0 },
-      name: { type: 'string', value: 'Alice' },
-      tags: { type: 'array', items: { type: 'string', value: '' } },
+      count: { type: 'number' },
+      name: { type: 'string' },
+      tags: { type: 'array', items: { type: 'string' } },
     },
-    initialState: null,
+    initialState: { count: 0, name: 'Alice', tags: [] },
   },
   actions: {
     increment: {
@@ -63,8 +63,8 @@ describe('useAppRuntime – initialization', () => {
       ...def,
       id: 'rt-test-2',
       model: {
-        schema: { score: { type: 'number', value: 99 } },
-        initialState: null,
+        schema: { score: { type: 'number' } },
+        initialState: { score: 99 },
       },
     };
     const { result, rerender } = renderHook(({ d }) => useAppRuntime(d), {
@@ -110,11 +110,11 @@ describe('useAppRuntime – setAt', () => {
           ui: {
             type: 'object',
             properties: {
-              darkMode: { type: 'boolean', value: false },
+              darkMode: { type: 'boolean' },
             },
           },
         },
-        initialState: null,
+        initialState: { ui: { darkMode: false } },
       },
     };
     const { result } = renderHook(() => useAppRuntime(nestedDef));

@@ -5,30 +5,30 @@ import {
   expandTemplate,
   applyStateOperation,
 } from './expressionEvaluator';
-import type { AppDefinition, ModelField } from '@/types/appDefinition.types';
+import type { AppDefinition } from '@/types/appDefinition.types';
 
 // ── initRuntimeState ──────────────────────────────────────────────────────────
 
 describe('initRuntimeState', () => {
-  it('initializes primitives from schema', () => {
+  it('initializes primitives from schema as null', () => {
     const model: AppDefinition['model'] = {
       schema: {
-        name: { type: 'string', value: 'Alice' },
-        count: { type: 'number', value: 0 },
-        active: { type: 'boolean', value: true },
+        name: { type: 'string' },
+        count: { type: 'number' },
+        active: { type: 'boolean' },
       },
       initialState: null,
     };
-    expect(initRuntimeState(model)).toEqual({ name: 'Alice', count: 0, active: true });
+    expect(initRuntimeState(model)).toEqual({ name: null, count: null, active: null });
   });
 
   it('prefers initialState over schema when present', () => {
     const model: AppDefinition['model'] = {
       schema: {
-        name: { type: 'string', value: 'schema-value' },
+        name: { type: 'string' },
       },
       initialState: {
-        name: { type: 'string', value: 'initial-value' },
+        name: 'initial-value',
       },
     };
     expect(initRuntimeState(model)).toEqual({ name: 'initial-value' });
@@ -37,7 +37,7 @@ describe('initRuntimeState', () => {
   it('initializes arrays as empty arrays', () => {
     const model: AppDefinition['model'] = {
       schema: {
-        items: { type: 'array', items: { type: 'string', value: '' } },
+        items: { type: 'array', items: { type: 'string' } },
       },
       initialState: null,
     };
@@ -54,30 +54,31 @@ describe('initRuntimeState', () => {
     expect(initRuntimeState(model)).toEqual({ user: null });
   });
 
-  it('initializes nested object fields recursively', () => {
+  it('initializes nested object fields recursively as null', () => {
     const model: AppDefinition['model'] = {
       schema: {
         ui: {
           type: 'object',
           properties: {
-            darkMode: { type: 'boolean', value: false },
-            lang: { type: 'string', value: 'en' },
+            darkMode: { type: 'boolean' },
+            lang: { type: 'string' },
           },
         },
       },
       initialState: null,
     };
-    expect(initRuntimeState(model)).toEqual({ ui: { darkMode: false, lang: 'en' } });
+    expect(initRuntimeState(model)).toEqual({ ui: { darkMode: null, lang: null } });
   });
 
-  it('returns null for primitive fields with no value', () => {
+  it('uses initialState as plain values bypassing schema', () => {
     const model: AppDefinition['model'] = {
       schema: {
-        missing: { type: 'string', value: undefined as unknown as string },
+        count: { type: 'number' },
+        name: { type: 'string' },
       },
-      initialState: null,
+      initialState: { count: 42, name: 'Alice' },
     };
-    expect(initRuntimeState(model)).toEqual({ missing: null });
+    expect(initRuntimeState(model)).toEqual({ count: 42, name: 'Alice' });
   });
 });
 
