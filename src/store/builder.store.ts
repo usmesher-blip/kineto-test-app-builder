@@ -100,6 +100,14 @@ export const builderActions = {
     return def ? JSON.stringify(def, null, 2) : '{}';
   },
 
+  jumpTo(snapshotId: string) {
+    const history = $history.get();
+    const idx = history.findIndex((s) => s.id === snapshotId);
+    if (idx !== -1) {
+      $history.set(history.slice(0, idx + 1));
+    }
+  },
+
   reset() {
     $history.set([]);
     $messages.set([]);

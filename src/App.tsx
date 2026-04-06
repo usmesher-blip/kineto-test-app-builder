@@ -1,6 +1,5 @@
 import { ChatPanel } from '@/components/Chat/ChatPanel'
 import { PreviewPanel } from '@/components/Preview/PreviewPanel'
-import { AppDefinitionPanel } from '@/components/AppDefinition/AppDefinitionPanel'
 
 export function App() {
   return (
@@ -29,10 +28,6 @@ export function App() {
           </div>
         </div>
 
-        {/* Right — App Definition */}
-        <div className="w-72 flex-none flex flex-col overflow-hidden border-l border-gray-200">
-          <AppDefinitionPanel />
-        </div>
       </div>
     </div>
   )

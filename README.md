@@ -143,9 +143,9 @@ The LLM receives the current definition as context and returns a full updated de
 
 - **No auth / key proxy** — the API key is bundled into the browser bundle. For a public deployment it should proxy through a backend.
 - **No streaming** — responses are awaited in full; a streaming UI would feel snappier.
-- **No visual snapshot timeline** — undo works but there is no UI to browse or jump to arbitrary history entries.
 - **No real code export** — the preview is a declarative renderer. Generating downloadable React/Vue code is future work.
 - **No adaptive layout** - it's pretty straightforward yet not really showing AI related features
+- **No real production setup** - just a static deployment from /dist directory
 
 ### What could be improved with more time invested
 - **Api refinement agent** - it's hard to configure the app for external api call with just one agent, we could introduce one more fore reading and refining external api calls
@@ -164,3 +164,9 @@ npm run build
 
 ## Important Notes
 - LLM API token is blended in the build for sake of testing, but it will expire in 2 days
+
+## AI usage Notes
+- Claude LLM is used for making a prototype of the application based on human designed models and architecture
+- Documents
+- Help with testing coverage
+- Development and general iterations
