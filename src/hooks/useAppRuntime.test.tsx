@@ -1,11 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useAppRuntime } from './useAppRuntime';
-import type { AppDefinitionV2 } from '@/types/appDefinition.types';
+import type { AppDefinition } from '@/types/appDefinition.types';
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
 
-const def: AppDefinitionV2 = {
+const def: AppDefinition = {
   id: 'rt-test',
   name: 'Runtime Test',
   description: '',
@@ -59,7 +59,7 @@ describe('useAppRuntime – initialization', () => {
   });
 
   it('re-initializes state when definition id changes', () => {
-    const def2: AppDefinitionV2 = {
+    const def2: AppDefinition = {
       ...def,
       id: 'rt-test-2',
       model: {
@@ -68,7 +68,7 @@ describe('useAppRuntime – initialization', () => {
       },
     };
     const { result, rerender } = renderHook(({ d }) => useAppRuntime(d), {
-      initialProps: { d: def as AppDefinitionV2 | null },
+      initialProps: { d: def as AppDefinition | null },
     });
     expect(result.current.state.count).toBe(0);
     rerender({ d: def2 });
@@ -102,7 +102,7 @@ describe('useAppRuntime – setAt', () => {
   });
 
   it('writes a value to a nested state path', () => {
-    const nestedDef: AppDefinitionV2 = {
+    const nestedDef: AppDefinition = {
       ...def,
       id: 'nested-test',
       model: {
@@ -150,9 +150,7 @@ describe('useAppRuntime – fire', () => {
 
   it('passes argBindings as args into the action', () => {
     const { result } = renderHook(() => useAppRuntime(def));
-    act(() =>
-      result.current.fire([{ actionId: 'setName', argBindings: { value: '"Bob"' } }])
-    );
+    act(() => result.current.fire([{ actionId: 'setName', argBindings: { value: '"Bob"' } }]));
     expect(result.current.state.name).toBe('Bob');
   });
 
@@ -168,7 +166,7 @@ describe('useAppRuntime – fire', () => {
 
 describe('useAppRuntime – page onMount', () => {
   it('fires onMount actions when the page is mounted', () => {
-    const defWithMount: AppDefinitionV2 = {
+    const defWithMount: AppDefinition = {
       ...def,
       id: 'mount-test',
       actions: {

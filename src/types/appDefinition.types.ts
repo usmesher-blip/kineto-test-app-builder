@@ -1,10 +1,10 @@
-export type AppDefinitionV2 = {
+export type AppDefinition = {
   id: string;
   name: string;
   description: string;
   model: {
     schema: Record<string, ModelField>;
-    initialState: Record<string, ModelField> | null;
+    initialState: Record<string, unknown> | null;
   };
   actions: Record<string, Action>;
   view: {
@@ -22,7 +22,7 @@ export type AppState = {
 };
 
 export type ModelField =
-  | { type: 'string' | 'number' | 'boolean' | 'null'; value: unknown }
+  | { type: 'string' | 'number' | 'boolean' | 'null' }
   | { type: 'object'; properties: Record<string, ModelField> }
   | { type: 'array'; items: ModelField }
   | { type: 'ref'; ref: string }; // reference another model by name

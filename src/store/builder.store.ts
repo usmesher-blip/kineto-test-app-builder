@@ -1,12 +1,12 @@
-import { atom, computed } from 'nanostores'
-import type { AppDefinitionV2 } from '@/types/appDefinition.types'
-import type { ChatMessage, Snapshot } from '@/types/builder.types.ts'
-import { nanoid } from '@/utils/nanoid'
+import { atom, computed } from 'nanostores';
+import type { AppDefinition } from '@/types/appDefinition.types';
+import type { ChatMessage, Snapshot } from '@/types/builder.types.ts';
+import { nanoid } from '@/utils/nanoid';
 
-const STORAGE_HISTORY = 'kineto-history'
-const STORAGE_MESSAGES = 'kineto-messages'
+const STORAGE_HISTORY = 'kineto-history';
+const STORAGE_MESSAGES = 'kineto-messages';
 
-const EMPTY_DEFINITION: AppDefinitionV2 = {
+const EMPTY_DEFINITION: AppDefinition = {
   id: 'default',
   name: 'My App',
   description: '',
@@ -26,87 +26,90 @@ const EMPTY_DEFINITION: AppDefinitionV2 = {
       },
     ],
   },
-}
+};
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 function loadJSON<T>(key: string, fallback: T): T {
   try {
-    const raw = localStorage.getItem(key)
-    return raw ? (JSON.parse(raw) as T) : fallback
+    const raw = localStorage.getItem(key);
+    return raw ? (JSON.parse(raw) as T) : fallback;
   } catch {
-    return fallback
+    return fallback;
   }
 }
 
 // ── Atoms ─────────────────────────────────────────────────────────────────────
 
-export const $history = atom<Snapshot[]>(loadJSON(STORAGE_HISTORY, []))
-export const $messages = atom<ChatMessage[]>(loadJSON(STORAGE_MESSAGES, []))
-export const $isGenerating = atom(false)
+export const $history = atom<Snapshot[]>(loadJSON(STORAGE_HISTORY, []));
+export const $messages = atom<ChatMessage[]>(loadJSON(STORAGE_MESSAGES, []));
+export const $isGenerating = atom(false);
 
 // Persist to localStorage on every change
-$history.subscribe((value) => localStorage.setItem(STORAGE_HISTORY, JSON.stringify(value)))
-$messages.subscribe((value) => localStorage.setItem(STORAGE_MESSAGES, JSON.stringify(value)))
+$history.subscribe((value) => localStorage.setItem(STORAGE_HISTORY, JSON.stringify(value)));
+$messages.subscribe((value) => localStorage.setItem(STORAGE_MESSAGES, JSON.stringify(value)));
 
 // ── Computed ──────────────────────────────────────────────────────────────────
 
-export const $currentDefinition = computed(
-  $history,
-  (history) => (history.length > 0 ? history[history.length - 1].definition : null)
-)
+export const $currentDefinition = computed($history, (history) =>
+  history.length > 0 ? history[history.length - 1].definition : null
+);
 
-export const $canUndo = computed($history, (history) => history.length > 1)
+export const $canUndo = computed($history, (history) => history.length > 1);
 
 // ── Actions ───────────────────────────────────────────────────────────────────
 
 export const builderActions = {
-  applyDefinition(def: AppDefinitionV2, label: string) {
+  applyDefinition(def: AppDefinition, label: string) {
     const snapshot: Snapshot = {
       id: nanoid(),
       timestamp: Date.now(),
       label,
       definition: { ...def, id: nanoid() },
-    }
-    const next = [...$history.get(), snapshot]
-    $history.set(next.length > 50 ? next.slice(next.length - 50) : next)
+    };
+    const next = [...$history.get(), snapshot];
+    $history.set(next.length > 50 ? next.slice(next.length - 50) : next);
   },
 
   undo() {
-    const history = $history.get()
+    const history = $history.get();
     if (history.length > 1) {
-      $history.set(history.slice(0, -1))
+      $history.set(history.slice(0, -1));
     }
   },
 
   addMessage(msg: Omit<ChatMessage, 'id' | 'timestamp'>) {
-    $messages.set([...$messages.get(), { ...msg, id: nanoid(), timestamp: Date.now() }])
+    $messages.set([...$messages.get(), { ...msg, id: nanoid(), timestamp: Date.now() }]);
+  },
+
+  clearMessages() {
+    $messages.set([]);
   },
 
   setGenerating(v: boolean) {
-    $isGenerating.set(v)
+    $isGenerating.set(v);
   },
 
   importDefinition(json: string) {
-    const def: AppDefinitionV2 = JSON.parse(json)
-    builderActions.applyDefinition(def, 'Imported definition')
+    const def: AppDefinition = JSON.parse(json);
+    builderActions.applyDefinition(def, 'Imported definition');
   },
 
   exportDefinition(): string {
-    const def = $currentDefinition.get()
-    return def ? JSON.stringify(def, null, 2) : '{}'
+    const def = $currentDefinition.get();
+    return def ? JSON.stringify(def, null, 2) : '{}';
   },
 
   reset() {
-    $history.set([])
-    $messages.set([])
-    $isGenerating.set(false)
-    builderActions.applyDefinition(EMPTY_DEFINITION, 'Initial app')
+    $history.set([]);
+    $messages.set([]);
+    $isGenerating.set(false);
+    builderActions.applyDefinition(EMPTY_DEFINITION, 'Initial app');
   },
-}
+};
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 
 if ($history.get().length === 0) {
-  builderActions.applyDefinition(EMPTY_DEFINITION, 'Initial app')
+  builderActions.applyDefinition(EMPTY_DEFINITION, 'Initial app');
 }

@@ -1,23 +1,23 @@
-import type { AppDefinitionV2 } from '@/types/appDefinition.types'
+import type { AppDefinition } from '@/types/appDefinition.types';
 
 // ─── Chat ────────────────────────────────────────────────────────────────────
 
-export type MessageRole = 'user' | 'assistant' | 'system'
+export type MessageRole = 'user' | 'assistant' | 'system';
 
 export interface ChatMessage {
-  id: string
-  role: MessageRole
-  content: string
-  timestamp: number
+  id: string;
+  role: MessageRole;
+  content: string;
+  timestamp: number;
   /** If this message triggered a definition change, stores the resulting snapshot id */
-  snapshotId?: string
+  snapshotId?: string;
 }
 
 // ─── History / Undo ──────────────────────────────────────────────────────────
 
 export interface Snapshot {
-  id: string
-  timestamp: number
-  label: string
-  definition: AppDefinitionV2
+  id: string;
+  timestamp: number;
+  label: string;
+  definition: AppDefinition;
 }

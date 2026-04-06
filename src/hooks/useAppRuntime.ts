@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import type { AppDefinitionV2, ActionRef, Page } from '@/types/appDefinition.types';
+import type { AppDefinition, ActionRef, Page } from '@/types/appDefinition.types';
 import { initRuntimeState, applyStateOperation } from '@/lib/expressionEvaluator';
 import { dispatch, type StateContainer } from '@/lib/actionExecutor';
 
-export function useAppRuntime(definition: AppDefinitionV2 | null) {
+export function useAppRuntime(definition: AppDefinition | null) {
   const [state, setState] = useState<Record<string, unknown>>({});
   const [currentPageId, setCurrentPageId] = useState<string>('');
 

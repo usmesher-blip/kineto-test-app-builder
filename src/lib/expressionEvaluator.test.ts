@@ -5,13 +5,13 @@ import {
   expandTemplate,
   applyStateOperation,
 } from './expressionEvaluator';
-import type { AppDefinitionV2, ModelField } from '@/types/appDefinition.types';
+import type { AppDefinition, ModelField } from '@/types/appDefinition.types';
 
 // ── initRuntimeState ──────────────────────────────────────────────────────────
 
 describe('initRuntimeState', () => {
   it('initializes primitives from schema', () => {
-    const model: AppDefinitionV2['model'] = {
+    const model: AppDefinition['model'] = {
       schema: {
         name: { type: 'string', value: 'Alice' },
         count: { type: 'number', value: 0 },
@@ -23,7 +23,7 @@ describe('initRuntimeState', () => {
   });
 
   it('prefers initialState over schema when present', () => {
-    const model: AppDefinitionV2['model'] = {
+    const model: AppDefinition['model'] = {
       schema: {
         name: { type: 'string', value: 'schema-value' },
       },
@@ -35,7 +35,7 @@ describe('initRuntimeState', () => {
   });
 
   it('initializes arrays as empty arrays', () => {
-    const model: AppDefinitionV2['model'] = {
+    const model: AppDefinition['model'] = {
       schema: {
         items: { type: 'array', items: { type: 'string', value: '' } },
       },
@@ -45,7 +45,7 @@ describe('initRuntimeState', () => {
   });
 
   it('initializes ref fields as null', () => {
-    const model: AppDefinitionV2['model'] = {
+    const model: AppDefinition['model'] = {
       schema: {
         user: { type: 'ref', ref: 'UserModel' },
       },
@@ -55,7 +55,7 @@ describe('initRuntimeState', () => {
   });
 
   it('initializes nested object fields recursively', () => {
-    const model: AppDefinitionV2['model'] = {
+    const model: AppDefinition['model'] = {
       schema: {
         ui: {
           type: 'object',
@@ -71,7 +71,7 @@ describe('initRuntimeState', () => {
   });
 
   it('returns null for primitive fields with no value', () => {
-    const model: AppDefinitionV2['model'] = {
+    const model: AppDefinition['model'] = {
       schema: {
         missing: { type: 'string', value: undefined as unknown as string },
       },
@@ -243,12 +243,10 @@ describe('applyStateOperation – filter', () => {
 
 describe('applyStateOperation – patch', () => {
   it('merges object fields', () => {
-    const next = applyStateOperation(
-      { user: { name: 'Alice', age: 30 } },
-      'user',
-      'patch',
-      { age: 31, role: 'admin' }
-    );
+    const next = applyStateOperation({ user: { name: 'Alice', age: 30 } }, 'user', 'patch', {
+      age: 31,
+      role: 'admin',
+    });
     expect(next.user).toEqual({ name: 'Alice', age: 31, role: 'admin' });
   });
 

@@ -33,5 +33,7 @@ export function useChat() {
     }
   }
 
-  return { messages, isGenerating, sendMessage }
+  const clearMessages = () => builderActions.clearMessages()
+
+  return { messages, isGenerating, sendMessage, clearMessages }
 }

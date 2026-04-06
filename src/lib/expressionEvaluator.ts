@@ -1,10 +1,10 @@
-import type { AppDefinitionV2, ModelField, StateUpdateAction } from '@/types/appDefinition.types';
+import type { AppDefinition, ModelField, StateUpdateAction } from '@/types/appDefinition.types';
 
 // ── Init runtime state from model schema ──────────────────────────────────────
 
-export function initRuntimeState(model: AppDefinitionV2['model']): Record<string, unknown> {
-  const source = model.initialState ?? model.schema;
-  return unwrapFields(source);
+export function initRuntimeState(model: AppDefinition['model']): Record<string, unknown> {
+  const source = model.schema;
+  return model.initialState ?? unwrapFields(source);
 }
 
 function unwrapFields(fields: Record<string, ModelField>): Record<string, unknown> {
@@ -15,7 +15,7 @@ function unwrapField(field: ModelField): unknown {
   if (field.type === 'object') return unwrapFields(field.properties);
   if (field.type === 'array') return [];
   if (field.type === 'ref') return null;
-  return field.value ?? null;
+  return null;
 }
 
 // ── Expression evaluation ─────────────────────────────────────────────────────
@@ -99,8 +99,6 @@ function applyOp(
       return value;
 
     case 'push':
-      console.log('DATA:', [...(Array.isArray(current) ? current : []), value]);
-
       return [...(Array.isArray(current) ? current : []), value];
 
     case 'remove': {

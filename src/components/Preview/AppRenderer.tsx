@@ -1,12 +1,10 @@
 import clsx from 'clsx';
 import { useAppRuntime } from '@/hooks/useAppRuntime';
 import { ViewElementRenderer } from './ViewElementRenderer';
-import type { AppDefinitionV2 } from '@/types/appDefinition.types';
+import type { AppDefinition } from '@/types/appDefinition.types';
 
-export function AppRenderer({ definition }: { definition: AppDefinitionV2 }) {
+export function AppRenderer({ definition }: { definition: AppDefinition }) {
   const { state, currentPage, fire, setAt, navigate } = useAppRuntime(definition);
-
-  console.log('STATE: ', state);
 
   if (!currentPage) {
     return (

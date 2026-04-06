@@ -7,9 +7,9 @@ import {
   $canUndo,
   builderActions,
 } from './builder.store';
-import type { AppDefinitionV2 } from '@/types/appDefinition.types';
+import type { AppDefinition } from '@/types/appDefinition.types';
 
-const makeDef = (id = 'def-1'): AppDefinitionV2 => ({
+const makeDef = (id = 'def-1'): AppDefinition => ({
   id,
   name: 'Test App',
   description: 'A test',
@@ -160,7 +160,7 @@ describe('exportDefinition', () => {
   it('returns a JSON string of the current definition', () => {
     builderActions.applyDefinition({ ...makeDef(), name: 'Export Test' }, 'export');
     const json = builderActions.exportDefinition();
-    const parsed = JSON.parse(json) as AppDefinitionV2;
+    const parsed = JSON.parse(json) as AppDefinition;
     expect(parsed.name).toBe('Export Test');
   });
 

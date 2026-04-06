@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { useChat } from './useChat';
 import { $messages, $isGenerating, $history, builderActions } from '@/store/builder.store';
-import type { AppDefinitionV2 } from '@/types/appDefinition.types';
+import type { AppDefinition } from '@/types/appDefinition.types';
 
 // Mock the AI module so tests never make real network requests
 vi.mock('@/lib/ai', () => ({
@@ -13,7 +13,7 @@ vi.mock('@/lib/ai', () => ({
 import { sendToAI } from '@/lib/ai';
 const mockSendToAI = vi.mocked(sendToAI);
 
-const sampleDef: AppDefinitionV2 = {
+const sampleDef: AppDefinition = {
   id: 'chat-test',
   name: 'Chat Test',
   description: '',

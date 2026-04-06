@@ -1,12 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { dispatch } from './actionExecutor';
 import type { RuntimeContext, StateContainer } from './actionExecutor';
-import type { AppDefinitionV2 } from '@/types/appDefinition.types';
+import type { AppDefinition } from '@/types/appDefinition.types';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function makeCtx(
-  actions: AppDefinitionV2['actions'],
+  actions: AppDefinition['actions'],
   initialState: Record<string, unknown> = {},
   overrides: Partial<RuntimeContext> = {}
 ): RuntimeContext & { setState: ReturnType<typeof vi.fn>; navigate: ReturnType<typeof vi.fn> } {
@@ -293,7 +293,9 @@ describe('apiCall action', () => {
       {}
     );
     dispatch([{ actionId: 'loadData' }], ctx);
-    await vi.waitFor(() => expect(fetch).toHaveBeenCalledWith('/api/items', expect.objectContaining({ method: 'GET' })));
+    await vi.waitFor(() =>
+      expect(fetch).toHaveBeenCalledWith('/api/items', expect.objectContaining({ method: 'GET' }))
+    );
   });
 
   it('expands {{expr}} placeholders in URL', async () => {
@@ -314,9 +316,7 @@ describe('apiCall action', () => {
       { userId: 7 }
     );
     dispatch([{ actionId: 'loadUser' }], ctx);
-    await vi.waitFor(() =>
-      expect(fetch).toHaveBeenCalledWith('/api/users/7', expect.anything())
-    );
+    await vi.waitFor(() => expect(fetch).toHaveBeenCalledWith('/api/users/7', expect.anything()));
   });
 
   it('stores response in resultTarget on success', async () => {
@@ -407,10 +407,7 @@ describe('apiCall action', () => {
     );
     dispatch([{ actionId: 'search' }], ctx);
     await vi.waitFor(() =>
-      expect(fetch).toHaveBeenCalledWith(
-        expect.stringContaining('q=hello'),
-        expect.anything()
-      )
+      expect(fetch).toHaveBeenCalledWith(expect.stringContaining('q=hello'), expect.anything())
     );
   });
 });

@@ -1,11 +1,11 @@
-import type { AppDefinitionV2, Action, ActionRef } from '@/types/appDefinition.types';
+import type { AppDefinition, Action, ActionRef } from '@/types/appDefinition.types';
 import { evaluateExpr, expandTemplate, applyStateOperation } from './expressionEvaluator';
 
 /** Mutable state container — lets sequential actions always see the latest state. */
 export type StateContainer = { current: Record<string, unknown> };
 
 export type RuntimeContext = {
-  definition: AppDefinitionV2;
+  definition: AppDefinition;
   state: StateContainer;
   setState: (s: Record<string, unknown>) => void;
   navigate: (pageId: string, params?: Record<string, string>) => void;
@@ -37,7 +37,8 @@ function withArgs(ref: ActionRef, ctx: RuntimeContext): RuntimeContext {
 function handle(action: Action, ctx: RuntimeContext): void {
   switch (action.type) {
     case 'stateUpdate': {
-      if (action.condition && !evaluateExpr(action.condition, ctx.state.current, ctx.extraContext)) return;
+      if (action.condition && !evaluateExpr(action.condition, ctx.state.current, ctx.extraContext))
+        return;
       const value = evaluateExpr(action.valueExpr, ctx.state.current, ctx.extraContext);
       const next = applyStateOperation(ctx.state.current, action.target, action.operation, value);
       ctx.state.current = next;

@@ -1,12 +1,12 @@
 import { useState, useRef, useEffect, type KeyboardEvent } from 'react'
-import { Send, Loader2 } from 'lucide-react'
+import { Send, Loader2, Trash2 } from 'lucide-react'
 import clsx from 'clsx'
 import { useChat } from '@/hooks/useChat'
 import { MessageBubble } from './MessageBubble'
 import { TypingIndicator } from './TypingIndicator'
 
 export function ChatPanel() {
-  const { messages, isGenerating, sendMessage } = useChat()
+  const { messages, isGenerating, sendMessage, clearMessages } = useChat()
   const [input, setInput] = useState('')
   const bottomRef = useRef<HTMLDivElement>(null)
 
@@ -31,8 +31,18 @@ export function ChatPanel() {
   return (
     <div className="flex flex-col h-full bg-white border-r border-gray-200">
       {/* Header */}
-      <div className="px-4 py-3 border-b border-gray-200 font-semibold text-gray-800 text-sm">
-        Chat
+      <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
+        <span className="font-semibold text-gray-800 text-sm">Chat</span>
+        {messages.length > 0 && (
+          <button
+            onClick={clearMessages}
+            disabled={isGenerating}
+            title="Clear chat"
+            className="text-gray-400 hover:text-red-500 disabled:cursor-not-allowed transition-colors"
+          >
+            <Trash2 size={15} />
+          </button>
+        )}
       </div>
 
       {/* Messages */}
