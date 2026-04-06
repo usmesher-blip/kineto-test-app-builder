@@ -71,7 +71,7 @@ export function PreviewPanel() {
       <div
         className={clsx(
           'absolute top-0 right-0 h-full z-10 flex flex-col bg-white border-l border-gray-200 shadow-xl transition-all duration-300 overflow-hidden',
-          drawerOpen ? 'w-80' : 'w-0'
+          drawerOpen ? 'w-full md:w-80' : 'w-0'
         )}
       >
         {/* Drawer header */}
@@ -151,10 +151,10 @@ export function PreviewPanel() {
         )}
       </div>
 
-      {/* Backdrop to close on mobile */}
+      {/* Backdrop — closes drawer when tapping outside on desktop */}
       {drawerOpen && (
         <div
-          className="absolute inset-0 z-0 sm:hidden"
+          className="absolute inset-0 z-[9] hidden md:block"
           onClick={() => setDrawerOpen(false)}
         />
       )}
