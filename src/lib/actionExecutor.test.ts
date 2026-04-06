@@ -9,7 +9,7 @@ function makeCtx(
   actions: AppDefinition['actions'],
   initialState: Record<string, unknown> = {},
   overrides: Partial<RuntimeContext> = {}
-): RuntimeContext & { setState: ReturnType<typeof vi.fn>; navigate: ReturnType<typeof vi.fn> } {
+) {
   const stateContainer: StateContainer = { current: { ...initialState } };
   const setState = vi.fn((s: Record<string, unknown>) => {
     stateContainer.current = s;
