@@ -1,6 +1,6 @@
-# App Builder — Kineto Take-Home
+# Kineto App Builder
 
-A chat-driven frontend app builder. Describe a mini-app in natural language; watch it come to life in the live preview.
+A chat-driven frontend app builder. Describe a mini-app in natural language and watch it come to life in a live preview — no code required.
 
 ## Live demo
 
@@ -10,13 +10,19 @@ A chat-driven frontend app builder. Describe a mini-app in natural language; wat
 
 ## Quick start
 
+### Prerequisites
+
+- Node.js 18+
+- A [Groq API key](https://console.groq.com)
+
+### Steps
+
 ```bash
 # 1. Install dependencies
 npm install
 
-# 2. Set your Anthropic API key
-cp .env.example .env.local
-# Edit .env.local and add: VITE_ANTHROPIC_API_KEY=sk-ant-...
+# 2. Set your Groq API key
+echo "VITE_GROQ_API_KEY=gsk_..." > .env.local
 
 # 3. Start dev server
 npm run dev
@@ -24,18 +30,35 @@ npm run dev
 
 Open http://localhost:5173 and start chatting.
 
+> The dev server proxies `/api/groq → https://api.groq.com`, so the API key stays out of network requests visible in DevTools during local development.
+
 ---
 
 ## Try it
 
 ```
 "Create a todo list"
-"Add a due date field"
+"Add a due date field to each task"
 "Add a priority selector with Low / Medium / High options"
 "Allow filtering by completion status"
-"Add dark mode"
+"Add a second page with a summary of completed tasks"
 "Add a button to clear completed tasks"
 ```
+
+---
+
+## Available scripts
+
+| Command | Description |
+|---|---|
+| `npm run dev` | Start local dev server with HMR |
+| `npm run build` | Type-check + production build into `dist/` |
+| `npm run preview` | Serve the production build locally |
+| `npm test` | Run all tests once |
+| `npm run test:watch` | Run tests in watch mode |
+| `npm run test:coverage` | Run tests with V8 coverage report |
+| `npm run lint` | ESLint with TypeScript rules |
+| `npm run format` | Prettier format all `src/**/*.{ts,tsx}` |
 
 ---
 
@@ -43,46 +66,86 @@ Open http://localhost:5173 and start chatting.
 
 ```
 src/
-├── types/          # AppDefinition schema + store types
-├── store/          # Zustand store (history, messages, persistence)
+├── types/
+│   ├── appDefinition.types.ts   # AppDefinition schema (model, actions, view)
+│   └── builder.types.ts         # Chat messages, Snapshot
+├── store/
+│   └── builder.store.ts         # nanostores atoms + history/undo/persist
 ├── lib/
-│   └── ai.ts       # Anthropic API wrapper + system prompt
+│   ├── ai.ts                    # Groq API wrapper (llama-3.3-70b-versatile)
+│   ├── systemPrompt.ts          # Prompt that instructs the LLM on AppDefinitionV2
+│   ├── actionExecutor.ts        # Runtime action dispatcher
+│   └── expressionEvaluator.ts   # Safe JS expression evaluator for data binding
 ├── hooks/
-│   ├── useChat.ts        # Chat orchestration (send → AI → apply)
-│   └── usePreviewApp.ts  # Live item state + filter logic
+│   ├── useChat.ts               # Chat orchestration: send → AI → apply definition
+│   └── useAppRuntime.ts         # Live app state, page navigation, action dispatch
 └── components/
-    ├── Chat/             # ChatPanel (message list + input)
-    ├── Preview/          # PreviewPanel (dynamic field/item renderer)
-    └── AppDefinition/    # JSON inspector + import/export/undo
+    ├── Chat/                    # ChatPanel, MessageBubble, TypingIndicator
+    ├── Preview/                 # PreviewPanel, AppRenderer, ViewElementRenderer
+    └── AppDefinition/           # JSON inspector, import/export, undo button
 ```
+
+### Data flow
+
+```
+User message
+    │
+    ▼
+useChat  ──►  ai.ts (Groq API, llama-3.3-70b)
+                │  returns { message, definition? }
+                ▼
+         builder.store  (nanostores atom)
+            $history[]  ◄── snapshot appended
+            $currentDefinition (computed)
+                │
+                ▼
+         PreviewPanel
+            useAppRuntime  ── manages runtime state, page nav
+                │
+                ▼
+         AppRenderer / ViewElementRenderer
+            ── reads state via expressionEvaluator
+            ── fires events → actionExecutor → state update → re-render
+```
+
+### AppDefinition schema
+
+Every app is a plain JSON object (`AppDefinition`) that describes three things:
+
+| Section | Purpose |
+|---|---|
+| `model` | Type schema + initial values for all app state |
+| `actions` | Named operations: state updates, API calls, navigation, sequences, conditionals |
+| `view` | Pages and element trees that read from state and fire actions |
+
+The LLM receives the current definition as context and returns a full updated definition. The renderer turns it into live React components — no code generation, no eval of generated code.
 
 ### Key decisions
 
 | Decision | Rationale |
 |---|---|
-| **AppDefinition as data model** | The app is a plain JSON object (`fields`, `filters`, `actions`, `items`). The AI updates it; the Preview renders it. Clear separation of "schema" vs "runtime state". |
-| **Zustand + Immer** | Simple, boilerplate-free store. Immer makes immutable history snapshots straightforward. |
-| **History as snapshot array** | Each AI response appends a full snapshot. Undo = pop. Simple and debuggable. |
-| **AI owns the schema, user owns the items** | The LLM modifies structural fields (what columns/filters exist). Item CRUD is handled locally in the Preview — no AI round-trip needed. |
-| **System prompt returns structured JSON** | The model is instructed to always return `{ message, definition? }`. This avoids parsing markdown or free text for structural changes. |
-| **localStorage persistence** | `zustand/middleware/persist` serialises history + messages automatically. No backend needed. |
-| **No iframe sandbox** | The preview renders React components driven by the definition. This is safer than `eval`-ing generated code but limits expressivity — a deliberate tradeoff for this scope. |
+| **AppDefinition as the single source of truth** | A plain JSON object drives both the AI (context) and the renderer (output). Clear separation of schema vs runtime state. |
+| **nanostores** | Minimal, framework-agnostic atoms. `$history` (snapshot array) + `$messages` (chat log) with localStorage persistence via `.subscribe`. |
+| **History as snapshot array** | Each AI response appends a full `AppDefinition` snapshot. Undo = pop last entry. Simple and inspectable. |
+| **Expression evaluator for data binding** | `source`, `visibleWhen`, `filterExpr`, and `valueExpr` are JS expressions evaluated in a sandboxed context with `state` (and `item`/`index` inside lists) in scope. No eval of LLM-generated code. |
+| **actionExecutor is synchronous for state ops** | State updates in a `sequence` are applied to a mutable container so each step sees the previous step's result — then React state is updated once. |
+| **Groq proxy in dev** | `vite.config.ts` proxies `/api/groq → https://api.groq.com`. In production builds, the client calls Groq directly with the env var key. |
+| **Structured JSON response** | The system prompt instructs the model to always return `{ message, definition? }` with no markdown fences. Malformed responses fall back to text-only. |
+| **filterExpr is display-only** | List filtering never mutates state — `filterExpr` hides items in the renderer. The `remove` operation is reserved for intentional destructive deletes. |
 
-### What's intentionally simplified / not done
+### What is intentionally out of scope
 
-- **No auth / key proxy** — the API key is sent from the browser. For a real deployment, proxy through a backend.
+- **No auth / key proxy** — the API key is bundled into the browser bundle. For a public deployment, proxy through a backend.
 - **No streaming** — responses are awaited in full; a streaming UI would feel snappier.
-- **No version navigation UI** — undo works but there's no timeline to browse snapshots visually.
-- **Single item layout** — items render as a flat row of inputs; cards, tables, or kanban layouts are future work.
-- **No real code generation** — the preview is a declarative renderer, not a full code generator. This is intentional for stability.
+- **No visual snapshot timeline** — undo works but there is no UI to browse or jump to arbitrary history entries.
+- **No real code export** — the preview is a declarative renderer. Generating downloadable React/Vue code is future work.
+- **No adaptive layout** - it's pretty straightforward yet not really showing AI related features
 
----
-
-## AI usage
-
-- **Claude (claude-sonnet-4)** powers the chat. It receives the current `AppDefinition` as context and returns a JSON patch.
-- The system prompt was designed iteratively to get reliable structured output without markdown fences.
-- This project scaffold was built with AI assistance for speed, with manual review of all generated code.
+### What could be improved with more time invested
+- **Api refinement agent** - it's hard to configure the app for external api call with just one agent, we could introduce one more fore reading and refining external api calls
+- **More styling features** - configuration could be extended to include more advanced styling features
+- **Better prompt and configurability** - with some requests it could go not very well so such refinement could help to get more reasonable output a lot
+- **Better UX in terms of LLM errors handling**
 
 ---
 
@@ -90,9 +153,4 @@ src/
 
 ```bash
 npm run build
-# Upload dist/ to Vercel, Netlify, or Cloudflare Pages
 ```
-
-For Vercel, set `VITE_ANTHROPIC_API_KEY` in Project Settings → Environment Variables.
-
-> ⚠️ Exposing an API key in a Vite app makes it visible in the browser. Fine for a review; not for public production use.
